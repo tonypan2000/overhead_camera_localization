@@ -1,17 +1,23 @@
+#define _USE_MATH_DEFINES
+
 #include <opencv2/highgui.hpp>
 #include <opencv2/aruco.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/core.hpp>
+#include <opencv2/calib3d.hpp>
+
 #include <iostream>
 #include <vector>
 #include <string>
+#include <cassert>
+#include <cmath>
 
 using namespace std;
 using namespace cv;
 
 const static int DICTIONARYID = 0;
-static const float MARKERLENGTH = 0.1;
-static const string IMG_FILENAME = "pos1.png";
+static const float MARKERLENGTH = 1;
+static const string IMG_FILENAME = "pos45.png";
 static const string XML_FILENAME = "sample_camera.xml";
 
 static bool readCameraParameters(string filename, Mat& camMatrix, Mat& distCoeffs) {
@@ -22,7 +28,37 @@ static bool readCameraParameters(string filename, Mat& camMatrix, Mat& distCoeff
 	return true;
 }
 
+// Checks if a matrix is a valid rotation matrix.
+bool isRotationMatrix(Mat &R) {
+    Mat Rt;
+    transpose(R, Rt);
+    Mat shouldBeIdentity = Rt * R;
+    Mat I = Mat::eye(3,3, shouldBeIdentity.type());
+    return norm(I, shouldBeIdentity) < 1e-6;
+}
+ 
+// Calculates rotation matrix to euler angles
+// The result is the same as MATLAB except the order
+// of the euler angles ( x and z are swapped ).
+Vec3f rotationMatrixToEulerAngles(Mat &R) {
+    assert(isRotationMatrix(R));
+    float sy = sqrt(R.at<double>(0,0) * R.at<double>(0,0) +  R.at<double>(1,0) * R.at<double>(1,0) );
+    bool singular = sy < 1e-6; // If
+    float x, y, z;
+    if (!singular) {
+        x = atan2(R.at<double>(2,1) , R.at<double>(2,2));
+        y = atan2(-R.at<double>(2,0), sy);
+        z = atan2(R.at<double>(1,0), R.at<double>(0,0));
+    } else {
+        x = atan2(-R.at<double>(1,2), R.at<double>(1,1));
+        y = atan2(-R.at<double>(2,0), sy);
+        z = 0;
+    }
+    return Vec3f(x / M_PI * 180, y / M_PI * 180, z / M_PI * 180);
+}
+
 int main() {
+	// read input image
 	Mat inputImage, imageCopy;
 	try {
 		inputImage = imread(IMG_FILENAME);
@@ -32,15 +68,25 @@ int main() {
 		return 1;
 	}
 
+	// detect markers from the input image
 	vector<int> markerIds;
 	vector<vector<Point2f>> markerCorners, rejectedCandidates;
 	Ptr<aruco::DetectorParameters> parameters = aruco::DetectorParameters::create();
 	Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(DICTIONARYID));
-
 	aruco::detectMarkers(inputImage, dictionary, markerCorners, markerIds, parameters, rejectedCandidates);
+
+	// find index of center marker
+	int index = 0;
+	for (int i = 0; i < markerIds.size(); ++i) {
+		if (markerIds[i] == 0) {
+			index = i;
+			break;
+		}
+	}
 
 	// TODO: camera calibration
 
+	// read camera calibration data
 	Mat camMatrix, distCoeffs;
 	bool readOk = readCameraParameters(XML_FILENAME, camMatrix, distCoeffs);
 	if (!readOk) {
@@ -59,18 +105,24 @@ int main() {
 		}
 	}
 
+	// get angle from rotational matrix
+	// convert rotational vector rvecs to rotational matrix
+	Mat rmat;
+	Rodrigues(rvecs[index], rmat, noArray());
+	Vec3f euler_angle = rotationMatrixToEulerAngles(rmat);
+
+	// display annotations (IDs and pose)
 	inputImage.copyTo(imageCopy);
 	if (!markerIds.empty()) {
+		char str[200];
+		sprintf_s(str, "X(m): %f", tvecs[index][0]);
+		putText(imageCopy, str, Point2f(325, 300), FONT_HERSHEY_PLAIN, 1, Scalar(0, 0, 0, 0));
+		sprintf_s(str, "Y(m): %f", tvecs[index][1]);
+		putText(imageCopy, str, Point2f(325, 330), FONT_HERSHEY_PLAIN, 1, Scalar(0, 0, 0, 0));
+		sprintf_s(str, "Angle(deg): %f", euler_angle[2]);
+		putText(imageCopy, str, Point2f(325, 360), FONT_HERSHEY_PLAIN, 1, Scalar(0, 0, 0, 0));
 		aruco::drawDetectedMarkers(imageCopy, markerCorners, markerIds);
-	}
-	for (size_t i = 0; i < markerIds.size(); i++) {
-		try {
-			aruco::drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[i], tvecs[i], MARKERLENGTH * 0.5f);
-		}
-		catch (Exception& e) {
-			cerr << e.msg << endl;
-			return i;
-		}
+		aruco::drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[index], tvecs[index], MARKERLENGTH * 0.5f);
 	}
 	imshow("Detect Markers", imageCopy);
 	waitKey(0);
