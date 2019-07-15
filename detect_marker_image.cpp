@@ -1,10 +1,10 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/aruco.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/core.hpp>
 #include <iostream>
 #include <vector>
 #include <string>
-#include <cassert>
 
 using namespace std;
 using namespace cv;
@@ -53,9 +53,6 @@ int main() {
 	if (!markerIds.empty()) {
 		try {
 			aruco::estimatePoseSingleMarkers(markerCorners, MARKERLENGTH, camMatrix, distCoeffs, rvecs, tvecs);
-			for (size_t i = 0; i < markerIds.size(); i++) {
-				aruco::drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[i], tvecs[i], MARKERLENGTH * 0.5f);
-			}
 		} catch (Exception& e) {
 			cerr << e.msg << endl;
 			return -2;
@@ -65,6 +62,15 @@ int main() {
 	inputImage.copyTo(imageCopy);
 	if (!markerIds.empty()) {
 		aruco::drawDetectedMarkers(imageCopy, markerCorners, markerIds);
+	}
+	for (size_t i = 0; i < markerIds.size(); i++) {
+		try {
+			aruco::drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[i], tvecs[i], MARKERLENGTH * 0.5f);
+		}
+		catch (Exception& e) {
+			cerr << e.msg << endl;
+			return i;
+		}
 	}
 	imshow("Detect Markers", imageCopy);
 	waitKey(0);
