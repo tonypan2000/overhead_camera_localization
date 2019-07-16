@@ -16,7 +16,7 @@ using namespace std;
 using namespace cv;
 
 const static int DICTIONARYID = 0;
-static const float MARKERLENGTH = 1;
+static const float MARKERLENGTH = 0.05;
 static const string IMG_FILENAME = "pos45.png";
 static const string XML_FILENAME = "sample_camera.xml";
 
@@ -114,15 +114,30 @@ int main() {
 	// display annotations (IDs and pose)
 	inputImage.copyTo(imageCopy);
 	if (!markerIds.empty()) {
+		putText(imageCopy, "Cozmo Pose", Point2f(10, 20), FONT_HERSHEY_PLAIN, 1, Scalar(255, 50, 255, 0));
 		char str[200];
 		sprintf_s(str, "X(m): %f", tvecs[index][0]);
-		putText(imageCopy, str, Point2f(325, 300), FONT_HERSHEY_PLAIN, 1, Scalar(0, 0, 0, 0));
+		putText(imageCopy, str, Point2f(10, 45), FONT_HERSHEY_PLAIN, 1, Scalar(255, 50, 255, 0));
 		sprintf_s(str, "Y(m): %f", tvecs[index][1]);
-		putText(imageCopy, str, Point2f(325, 330), FONT_HERSHEY_PLAIN, 1, Scalar(0, 0, 0, 0));
+		putText(imageCopy, str, Point2f(10, 70), FONT_HERSHEY_PLAIN, 1, Scalar(255, 50, 255, 0));
 		sprintf_s(str, "Angle(deg): %f", euler_angle[2]);
-		putText(imageCopy, str, Point2f(325, 360), FONT_HERSHEY_PLAIN, 1, Scalar(0, 0, 0, 0));
+		putText(imageCopy, str, Point2f(10, 95), FONT_HERSHEY_PLAIN, 1, Scalar(255, 50, 255, 0));
 		aruco::drawDetectedMarkers(imageCopy, markerCorners, markerIds);
 		aruco::drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[index], tvecs[index], MARKERLENGTH * 0.5f);
+		// get distance from other markers
+		putText(imageCopy, "Distances to Objects(m)", Point2f(300, 20), FONT_HERSHEY_PLAIN, 1, Scalar(150, 200, 200, 0));
+		for (int i = 0; i < tvecs.size(); ++i) {
+			float x_0 = tvecs[index][0];
+			float y_0 = tvecs[index][1];
+			float x = tvecs[i][0];
+			float y = tvecs[i][1];
+			float dx = max(x, x_0) - min(x, x_0);
+			float dy = max(y, y_0) - min(y, y_0);
+			float dist = sqrt(dx * dx + dy * dy);
+			int id = markerIds[i];
+			sprintf_s(str, "id=%i: %f", id, dist);
+			putText(imageCopy, str, Point2f(300, 45 + 25 * i), FONT_HERSHEY_PLAIN, 1, Scalar(150, 200, 200, 0));
+		}
 	}
 	imshow("Detect Markers", imageCopy);
 	waitKey(0);
