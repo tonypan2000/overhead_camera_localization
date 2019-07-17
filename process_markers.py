@@ -24,18 +24,19 @@ def rotation_matrix_to_euler_angles(R):
 	sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
 	singular = sy < 1e-6
 	if not singular:
-		x = math.atan2(R[2, 1], R[2, 2])
-		y = math.atan2(-R[2, 0], sy)
-		z = math.atan2(R[1, 0], R[0, 0])
+		x = math.atan2(R[2, 1], R[2, 2]) / math.pi * 180
+		y = math.atan2(-R[2, 0], sy) / math.pi * 180
+		z = math.atan2(R[1, 0], R[0, 0]) / math.pi * 180
 	else:
-		x = math.atan2(-R[1, 2], R[1, 1])
-		y = math.atan2(-R[2, 0], sy)
-		z = 0
+		x = math.atan2(-R[1, 2], R[1, 1]) / math.pi * 180
+		y = math.atan2(-R[2, 0], sy) / math.pi * 180
+		z = 0 / math.pi * 180
 	return np.array([x, y, z])
 
 
 # detect markers from the input image
 inputImage = cv.imread(IMG_FILENAME)
+inputImage = cv.resize(inputImage,None, fx=0.2, fy=0.2, interpolation=cv.INTER_CUBIC)
 dictionary = aruco.Dictionary_get(DICTIONARYID)
 parameters = aruco.DetectorParameters_create()
 markerCorners, markerIds, rejectedCandidates = aruco.detectMarkers(inputImage, dictionary, parameters=parameters)
@@ -64,7 +65,7 @@ if not len(markerIds) == 0:
 # get angle from rotational matrix
 # convert rotational vector rvecs to rotational matrix
 rmat = np.empty([3, 3])
-cv.Rodrigues(rvecs[index], rmat)
+cv.Rodrigues(rvecs[index][0], rmat)
 euler_angle = rotation_matrix_to_euler_angles(rmat)
 
 # display annotations (IDs and pose)
