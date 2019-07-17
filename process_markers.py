@@ -6,7 +6,7 @@ import math
 DICTIONARYID = 0
 MARKERLENGTH = 0.05
 IMG_FILENAME = "pos45.png"
-XML_FILENAME = "sample_camera.xml"
+XML_FILENAME = "calibration_data.xml"
 
 
 # Checks if a matrix is a valid rotation matrix.

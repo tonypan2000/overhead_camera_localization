@@ -1,7 +1,9 @@
 import cv2 as cv
 from threading import Thread
 import numpy as np
-import yaml
+
+
+FILENAME = "calibration_data.xml"
 
 # termination criteria
 criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
@@ -38,6 +40,11 @@ class Webcam:
         return self.current_frame
 
 
+def triada(itm):
+    a, b, c = itm
+    return E.Triada(a=str(a), b=str(b), c=str(c))
+
+
 webcam = Webcam()
 webcam.start()
 
@@ -59,7 +66,7 @@ for x in range(50):
 ret, camMatrix, distCoeff, rvecs, tvecs = cv.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
 print("camera matrix:\n", camMatrix)
 print("distortion coefficients: ", distCoeff)
-filename = "calibration_data/data.yaml"
-calibration = {'camera_matrix': camMatrix.tolist(), 'dist_coefs': distCoeff.tolist()}
-with open(filename, "w") as f:
-    yaml.dump(calibration, f)
+fs = cv.FileStorage(FILENAME, cv.FILE_STORAGE_WRITE)
+fs.write("camera_matrix", camMatrix)
+fs.write("distortion_coefficients", distCoeff)
+fs.release()
