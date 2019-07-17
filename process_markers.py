@@ -4,7 +4,7 @@ import numpy as np
 import math
 
 DICTIONARYID = 0
-MARKERLENGTH = 0.05
+MARKERLENGTH = 0.053
 IMG_FILENAME = "pos45.png"
 XML_FILENAME = "calibration_data.xml"
 
@@ -34,9 +34,13 @@ def rotation_matrix_to_euler_angles(R):
     return np.array([x, y, z])
 
 
+cam = cv.VideoCapture(0)
+cv.namedWindow("test")
+ret, inputImage = cam.read()
+
 # detect markers from the input image
-inputImage = cv.imread(IMG_FILENAME)
-inputImage = cv.resize(inputImage,None, fx=0.2, fy=0.2, interpolation=cv.INTER_CUBIC)
+#inputImage = cv.imread(IMG_FILENAME)
+#inputImage = cv.resize(inputImage,None, fx=0.2, fy=0.2, interpolation=cv.INTER_CUBIC)
 dictionary = aruco.Dictionary_get(DICTIONARYID)
 parameters = aruco.DetectorParameters_create()
 markerCorners, markerIds, rejectedCandidates = aruco.detectMarkers(inputImage, dictionary, parameters=parameters)
@@ -71,26 +75,29 @@ euler_angle = rotation_matrix_to_euler_angles(rmat)
 # display annotations (IDs and pose)
 imageCopy = inputImage.copy()
 if not len(markerIds) == 0:
-    cv.putText(imageCopy, "Cozmo Pose", (10, 20), cv.FONT_HERSHEY_PLAIN, 1, (255, 50, 255, 0))
+    cv.putText(imageCopy, "Cozmo Pose", (10, 20), cv.FONT_HERSHEY_PLAIN, 1, (0, 0, 0, 0))
     msg = "X(m): " + str(tvecs[index][0][0])
-    cv.putText(imageCopy, msg, (10, 45), cv.FONT_HERSHEY_PLAIN, 1, (255, 50, 255, 0))
+    cv.putText(imageCopy, msg, (10, 45), cv.FONT_HERSHEY_PLAIN, 1, (0, 0, 0, 0))
     msg = "Y(m): " + str(tvecs[index][0][1])
-    cv.putText(imageCopy, msg, (10, 70), cv.FONT_HERSHEY_PLAIN, 1, (255, 50, 255, 0))
+    cv.putText(imageCopy, msg, (10, 70), cv.FONT_HERSHEY_PLAIN, 1, (0, 0, 0, 0))
     msg = "Angle(deg): " + str(euler_angle[2])
-    cv.putText(imageCopy, msg, (10, 95), cv.FONT_HERSHEY_PLAIN, 1, (255, 50, 255, 0))
+    cv.putText(imageCopy, msg, (10, 95), cv.FONT_HERSHEY_PLAIN, 1, (0, 0, 0, 0))
     aruco.drawDetectedMarkers(imageCopy, markerCorners, markerIds)
     aruco.drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[index][0], tvecs[index][0], MARKERLENGTH * 0.5)
     # get distance from other markers
     x_0 = tvecs[index][0][0]
     y_0 = tvecs[index][0][1]
-    cv.putText(imageCopy, "Distances to Objects(m)", (300, 20), cv.FONT_HERSHEY_PLAIN, 1, (150, 200, 200, 0))
+    z_0 = tvecs[index][0][2]
+    cv.putText(imageCopy, "Distances to Objects(m)", (300, 20), cv.FONT_HERSHEY_PLAIN, 1, (0, 0, 0, 0))
     for i in range(len(tvecs)):
         x = tvecs[i][0][0]
         y = tvecs[i][0][1]
+        z = tvecs[i][0][2]
         dx = max(x, x_0) - min(x, x_0)
         dy = max(y, y_0) - min(y, y_0)
-        dist = math.sqrt(dx * dx + dy * dy)
+        dz = max(z, z_0) - min(z, z_0)
+        dist = math.sqrt(dx * dx + dy * dy + dz * dz)
         msg = "id=" + str(markerIds[i]) + ": " + str(dist)
-        cv.putText(imageCopy, msg, (300, 45 + 25 * i), cv.FONT_HERSHEY_PLAIN, 1, (150, 200, 200, 0))
+        cv.putText(imageCopy, msg, (300, 45 + 25 * i), cv.FONT_HERSHEY_PLAIN, 1, (0, 0, 0, 0))
 cv.imshow("Detect Markers", imageCopy)
 cv.waitKey(0)

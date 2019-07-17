@@ -48,7 +48,7 @@ def triada(itm):
 webcam = Webcam()
 webcam.start()
 
-for x in range(50):
+for x in range(100):
     # get image from webcam
     image = webcam.get_current_frame()
     gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
