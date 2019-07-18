@@ -3,7 +3,7 @@ from threading import Thread
 import numpy as np
 
 
-FILENAME = "calibration_data.xml"
+FILENAME = "calibration_data1.xml"
 
 # termination criteria
 criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
@@ -24,7 +24,7 @@ imgpoints = [] # 2d points in image plane.
 # webcam class running a thread
 class Webcam:
     def __init__(self):
-        self.video_capture = cv.VideoCapture(0)
+        self.video_capture = cv.VideoCapture(1)
         self.current_frame = self.video_capture.read()[1]
 
     # create thread for capturing images
@@ -40,15 +40,10 @@ class Webcam:
         return self.current_frame
 
 
-def triada(itm):
-    a, b, c = itm
-    return E.Triada(a=str(a), b=str(b), c=str(c))
-
-
 webcam = Webcam()
 webcam.start()
 
-for x in range(100):
+for x in range(500):
     # get image from webcam
     image = webcam.get_current_frame()
     gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
@@ -61,8 +56,9 @@ for x in range(100):
         # Draw and display the corners
         image = cv.drawChessboardCorners(image, (9, 6), corners2, ret)
         cv.imshow('image', image)
-        cv.waitKey(500)
+        cv.waitKey(100)
 
+print("calibrating...")
 ret, camMatrix, distCoeff, rvecs, tvecs = cv.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
 print("camera matrix:\n", camMatrix)
 print("distortion coefficients: ", distCoeff)
