@@ -34,70 +34,72 @@ def rotation_matrix_to_euler_angles(R):
     return np.array([x, y, z])
 
 
-cam = cv.VideoCapture(0)
-cv.namedWindow("test")
-ret, inputImage = cam.read()
+cam = cv.VideoCapture(1)
+cv.namedWindow("HD Pro Webcam C920")
+while True:
 
-# detect markers from the input image
-#inputImage = cv.imread(IMG_FILENAME)
-#inputImage = cv.resize(inputImage,None, fx=0.2, fy=0.2, interpolation=cv.INTER_CUBIC)
-dictionary = aruco.Dictionary_get(DICTIONARYID)
-parameters = aruco.DetectorParameters_create()
-markerCorners, markerIds, rejectedCandidates = aruco.detectMarkers(inputImage, dictionary, parameters=parameters)
+    ret, inputImage = cam.read()
+    # detect markers from the input image
+    #inputImage = cv.imread(IMG_FILENAME)
+    #inputImage = cv.resize(inputImage,None, fx=0.2, fy=0.2, interpolation=cv.INTER_CUBIC)
+    dictionary = aruco.Dictionary_get(DICTIONARYID)
+    parameters = aruco.DetectorParameters_create()
+    markerCorners, markerIds, rejectedCandidates = aruco.detectMarkers(inputImage, dictionary, parameters=parameters)
 
-# find index of center marker
-index = 0
-for i in range(len(markerIds)):
-    if markerIds[i] == 0:
-        index = i
-        break
+    if markerIds is not None:
+        # find index of center marker
+        index = 0
+        for i in range(len(markerIds)):
+            if markerIds[i] == 0:
+                index = i
+                break
 
-# TODO: camera calibration
+        # TODO: camera calibration
 
-# read camera calibration data
-fs = cv.FileStorage(XML_FILENAME, cv.FILE_STORAGE_READ)
-if not fs.isOpened():
-    print("Invalid camera file")
-    exit(-1)
-camMatrix = fs.getNode("camera_matrix").mat()
-distCoeffs = fs.getNode("distortion_coefficients").mat()
+        # read camera calibration data
+        fs = cv.FileStorage(XML_FILENAME, cv.FILE_STORAGE_READ)
+        if not fs.isOpened():
+            print("Invalid camera file")
+            exit(-1)
+        camMatrix = fs.getNode("camera_matrix").mat()
+        distCoeffs = fs.getNode("distortion_coefficients").mat()
 
-# pose estimation
-if not len(markerIds) == 0:
-    rvecs, tvecs, _ = aruco.estimatePoseSingleMarkers(markerCorners, MARKERLENGTH, camMatrix, distCoeffs)
+        # pose estimation
+        if not len(markerIds) == 0:
+            rvecs, tvecs, _ = aruco.estimatePoseSingleMarkers(markerCorners, MARKERLENGTH, camMatrix, distCoeffs)
 
-# get angle from rotational matrix
-# convert rotational vector rvecs to rotational matrix
-rmat = np.empty([3, 3])
-cv.Rodrigues(rvecs[index][0], rmat)
-euler_angle = rotation_matrix_to_euler_angles(rmat)
+        # get angle from rotational matrix
+        # convert rotational vector rvecs to rotational matrix
+        rmat = np.empty([3, 3])
+        cv.Rodrigues(rvecs[index][0], rmat)
+        euler_angle = rotation_matrix_to_euler_angles(rmat)
 
-# display annotations (IDs and pose)
-imageCopy = inputImage.copy()
-if not len(markerIds) == 0:
-    cv.putText(imageCopy, "Cozmo Pose", (10, 20), cv.FONT_HERSHEY_PLAIN, 1, (0, 0, 0, 0))
-    msg = "X(m): " + str(tvecs[index][0][0])
-    cv.putText(imageCopy, msg, (10, 45), cv.FONT_HERSHEY_PLAIN, 1, (0, 0, 0, 0))
-    msg = "Y(m): " + str(tvecs[index][0][1])
-    cv.putText(imageCopy, msg, (10, 70), cv.FONT_HERSHEY_PLAIN, 1, (0, 0, 0, 0))
-    msg = "Angle(deg): " + str(euler_angle[2])
-    cv.putText(imageCopy, msg, (10, 95), cv.FONT_HERSHEY_PLAIN, 1, (0, 0, 0, 0))
-    aruco.drawDetectedMarkers(imageCopy, markerCorners, markerIds)
-    aruco.drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[index][0], tvecs[index][0], MARKERLENGTH * 0.5)
-    # get distance from other markers
-    x_0 = tvecs[index][0][0]
-    y_0 = tvecs[index][0][1]
-    z_0 = tvecs[index][0][2]
-    cv.putText(imageCopy, "Distances to Objects(m)", (300, 20), cv.FONT_HERSHEY_PLAIN, 1, (0, 0, 0, 0))
-    for i in range(len(tvecs)):
-        x = tvecs[i][0][0]
-        y = tvecs[i][0][1]
-        z = tvecs[i][0][2]
-        dx = max(x, x_0) - min(x, x_0)
-        dy = max(y, y_0) - min(y, y_0)
-        dz = max(z, z_0) - min(z, z_0)
-        dist = math.sqrt(dx * dx + dy * dy + dz * dz)
-        msg = "id=" + str(markerIds[i]) + ": " + str(dist)
-        cv.putText(imageCopy, msg, (300, 45 + 25 * i), cv.FONT_HERSHEY_PLAIN, 1, (0, 0, 0, 0))
-cv.imshow("Detect Markers", imageCopy)
-cv.waitKey(0)
+        # display annotations (IDs and pose)
+        imageCopy = inputImage.copy()
+        if not len(markerIds) == 0:
+            cv.putText(imageCopy, "Cozmo Pose", (10, 20), cv.FONT_HERSHEY_PLAIN, 1, (0, 0, 0, 0))
+            msg = "X(m): " + str(tvecs[index][0][0])
+            cv.putText(imageCopy, msg, (10, 45), cv.FONT_HERSHEY_PLAIN, 1, (0, 0, 0, 0))
+            msg = "Y(m): " + str(tvecs[index][0][1])
+            cv.putText(imageCopy, msg, (10, 70), cv.FONT_HERSHEY_PLAIN, 1, (0, 0, 0, 0))
+            msg = "Angle(deg): " + str(euler_angle[2])
+            cv.putText(imageCopy, msg, (10, 95), cv.FONT_HERSHEY_PLAIN, 1, (0, 0, 0, 0))
+            aruco.drawDetectedMarkers(imageCopy, markerCorners, markerIds)
+            aruco.drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[index][0], tvecs[index][0], MARKERLENGTH * 0.5)
+            # get distance from other markers
+            x_0 = tvecs[index][0][0]
+            y_0 = tvecs[index][0][1]
+            z_0 = tvecs[index][0][2]
+            cv.putText(imageCopy, "Distances to Objects(m)", (300, 20), cv.FONT_HERSHEY_PLAIN, 1, (0, 0, 0, 0))
+            for i in range(len(tvecs)):
+                x = tvecs[i][0][0]
+                y = tvecs[i][0][1]
+                z = tvecs[i][0][2]
+                dx = max(x, x_0) - min(x, x_0)
+                dy = max(y, y_0) - min(y, y_0)
+                dz = max(z, z_0) - min(z, z_0)
+                dist = math.sqrt(dx * dx + dy * dy + dz * dz)
+                msg = "id=" + str(markerIds[i]) + ": " + str(dist)
+                cv.putText(imageCopy, msg, (300, 45 + 25 * i), cv.FONT_HERSHEY_PLAIN, 1, (0, 0, 0, 0))
+        cv.imshow("Detect Markers", imageCopy)
+        cv.waitKey(100)
