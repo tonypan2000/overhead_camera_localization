@@ -3,7 +3,7 @@ from threading import Thread
 import numpy as np
 
 
-FILENAME = "calibration_data1.xml"
+FILENAME = "calibration_data.xml"
 
 # termination criteria
 criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
@@ -43,10 +43,12 @@ class Webcam:
 webcam = Webcam()
 webcam.start()
 
-for x in range(500):
+for x in range(100):
     # get image from webcam
     image = webcam.get_current_frame()
     gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+    cv.imshow('image', gray)
+    cv.waitKey(100)
     # Find the chess board corners
     ret, corners = cv.findChessboardCorners(gray, (9, 6), None)
     if ret:
@@ -54,9 +56,9 @@ for x in range(500):
         corners2 = cv.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
         imgpoints.append(corners2)
         # Draw and display the corners
-        image = cv.drawChessboardCorners(image, (9, 6), corners2, ret)
-        cv.imshow('image', image)
-        cv.waitKey(100)
+        # image = cv.drawChessboardCorners(image, (9, 6), corners2, ret)
+        # cv.imshow('image', image)
+        # cv.waitKey(100)
 
 print("calibrating...")
 ret, camMatrix, distCoeff, rvecs, tvecs = cv.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
