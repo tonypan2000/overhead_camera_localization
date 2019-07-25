@@ -62,16 +62,18 @@ while True:
                 index = i
             elif markerIds[i] == 1:
                 index1 = i
+            elif markerIds[i] == 2:
+                index2 = i
 
         # pose estimation
-        if len(markerIds) > 1:
+        if len(markerIds) > 2:
             rvecs, tvecs, _ = aruco.estimatePoseSingleMarkers(markerCorners, MARKERLENGTH, camMatrix, distCoeffs)
 
             # translate tvecs from relation to camera to a marker
             tvecs[index][0] -= tvecs[index1][0]
 
-            # flip the x axis
-            tvecs[index][0][0] = -tvecs[index][0][0]
+            # flip the y axis
+            tvecs[index][0][1] = -tvecs[index][0][1]
 
             # get angle from rotational matrix
             # convert rotational vector rvecs to rotational matrix
@@ -79,9 +81,15 @@ while True:
             rmat = np.empty([3, 3])
             cv.Rodrigues(rvecs[index][0], rmat)
             rmat_0 = np.empty([3, 3])
+            rmat_2 = np.empty([3, 3])
+            cv.Rodrigues(rvecs[index2][0], rmat_2)
             cv.Rodrigues(rvecs[index1][0], rmat_0)
             euler_angle1 = rotation_matrix_to_euler_angles(rmat_0)
             euler_angle = rotation_matrix_to_euler_angles(rmat) - euler_angle1
+            euler_angle_cube = rotation_matrix_to_euler_angles(rmat_2) - euler_angle1  # cube relative
+
+            # flip yaw
+            euler_angle = -euler_angle
 
             # display annotations (IDs and pose)
             imageCopy = inputImage.copy()
@@ -90,10 +98,14 @@ while True:
             cv.putText(imageCopy, msg, (10, 45), cv.FONT_HERSHEY_PLAIN, 1, (255, 0, 0, 0))
             msg = "Y(m): " + str(tvecs[index][0][1])
             cv.putText(imageCopy, msg, (10, 70), cv.FONT_HERSHEY_PLAIN, 1, (255, 0, 0, 0))
-            # msg = "Z(m): " + str(tvecs[index][0][2])
-            # cv.putText(imageCopy, msg, (10, 95), cv.FONT_HERSHEY_PLAIN, 1, (255, 0, 0, 0))
             msg = "Angle(deg): " + str(euler_angle[2])
+            cv.putText(imageCopy, msg, (10, 95), cv.FONT_HERSHEY_PLAIN, 1, (255, 0, 0, 0))
+            msg = "Cube X(m): " + str(tvecs[index2][0][0])
             cv.putText(imageCopy, msg, (10, 120), cv.FONT_HERSHEY_PLAIN, 1, (255, 0, 0, 0))
+            msg = "Cube Y(m): " + str(tvecs[index2][0][1])
+            cv.putText(imageCopy, msg, (10, 145), cv.FONT_HERSHEY_PLAIN, 1, (255, 0, 0, 0))
+            msg = "Cube Angle(deg): " + str(euler_angle_cube[2])
+            cv.putText(imageCopy, msg, (10, 170), cv.FONT_HERSHEY_PLAIN, 1, (255, 0, 0, 0))
             aruco.drawDetectedMarkers(imageCopy, markerCorners, markerIds)
             cv.imshow("Detect Markers", imageCopy)
             cv.waitKey(100)
