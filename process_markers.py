@@ -35,7 +35,6 @@ def rotation_matrix_to_euler_angles(R):
 
 
 cam = cv.VideoCapture(1)
-cv.namedWindow("HD Pro Webcam C920")
 
 # read camera calibration data
 fs = cv.FileStorage(XML_FILENAME, cv.FILE_STORAGE_READ)
@@ -48,6 +47,18 @@ distCoeffs = fs.getNode("distortion_coefficients").mat()
 while True:
 
     ret, inputImage = cam.read()
+
+    # undistort image
+    h, w = inputImage.shape[:2]
+    newcameramtx, roi = cv.getOptimalNewCameraMatrix(camMatrix, distCoeffs, (w, h), 1, (w, h))
+    dst = cv.undistort(inputImage, camMatrix, distCoeffs, None, newcameramtx)
+    # crop the image
+    x, y, w, h = roi
+    inputImage = dst[y:y + h, x:x + w]
+
+    cv.imshow("HD Pro Webcam C920", inputImage)
+    cv.waitKey(50)
+
     # detect markers from the input image
     dictionary = aruco.Dictionary_get(DICTIONARYID)
     parameters = aruco.DetectorParameters_create()
