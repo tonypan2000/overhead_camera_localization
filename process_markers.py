@@ -82,9 +82,11 @@ while True:
 
             # translate tvecs from relation to camera to a marker
             tvecs[index][0] -= tvecs[index1][0]
+            tvecs[index2][0] -= tvecs[index1][0]
 
-            # flip the y axis
+            # flip y axis
             tvecs[index][0][1] = -tvecs[index][0][1]
+            tvecs[index2][0][1] = -tvecs[index2][0][1]
 
             # get angle from rotational matrix
             # convert rotational vector rvecs to rotational matrix
@@ -98,9 +100,6 @@ while True:
             euler_angle1 = rotation_matrix_to_euler_angles(rmat_0)
             euler_angle = rotation_matrix_to_euler_angles(rmat) - euler_angle1
             euler_angle_cube = rotation_matrix_to_euler_angles(rmat_2) - euler_angle1  # cube relative
-
-            # flip yaw
-            euler_angle = -euler_angle
 
             # display annotations (IDs and pose)
             imageCopy = inputImage.copy()
