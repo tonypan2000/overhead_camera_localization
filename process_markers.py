@@ -80,6 +80,11 @@ while True:
         if len(markerIds) > 2:
             rvecs, tvecs, _ = aruco.estimatePoseSingleMarkers(markerCorners, MARKERLENGTH, camMatrix, distCoeffs)
 
+            imageCopy = inputImage.copy()
+            aruco.drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[index][0], tvecs[index][0], MARKERLENGTH * 0.5)
+            aruco.drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[index1][0], tvecs[index1][0], MARKERLENGTH * 0.5)
+            aruco.drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[index2][0], tvecs[index2][0], MARKERLENGTH * 0.5)
+
             # translate tvecs from relation to camera to a marker
             tvecs[index][0] -= tvecs[index1][0]
             tvecs[index2][0] -= tvecs[index1][0]
@@ -101,8 +106,21 @@ while True:
             euler_angle = rotation_matrix_to_euler_angles(rmat) - euler_angle1
             euler_angle_cube = rotation_matrix_to_euler_angles(rmat_2) - euler_angle1  # cube relative
 
+            # flip yaw
+            euler_angle = -euler_angle
+            euler_angle_cube = -euler_angle_cube
+
+            # fix yaw to -pi to pi
+            if euler_angle[2] < -180:
+                euler_angle[2] += 360
+            elif euler_angle[2] > 180:
+                euler_angle[2] -= 360
+            if euler_angle_cube[2] < -180:
+                euler_angle_cube[2] += 360
+            elif euler_angle_cube[2] > 180:
+                euler_angle_cube[2] -= 360
+
             # display annotations (IDs and pose)
-            imageCopy = inputImage.copy()
             cv.putText(imageCopy, "Cozmo Pose", (10, 20), cv.FONT_HERSHEY_PLAIN, 1, (255, 0, 0, 0))
             msg = "X(m): " + str(tvecs[index][0][0])
             cv.putText(imageCopy, msg, (10, 45), cv.FONT_HERSHEY_PLAIN, 1, (255, 0, 0, 0))
